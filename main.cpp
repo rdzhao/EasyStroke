@@ -1,41 +1,43 @@
 #include "stroke.h"
 #include <fstream>
 
+#define PI 3.14159265358979323
+
 int main()
 {
-	vector<float> v, n;
-	for (int i = 0; i < 10; ++i)
-	{
-		v.push_back(i);
-		v.push_back(0);
-		v.push_back(0);
+	vector<vec3> v, n;
+	//for (int i = 0; i < 3; ++i) {
+	//	v.push_back(vec3(i, 0, 0));
+	//	n.push_back(vec3(0, 0, 1));
+	//}
 
-		n.push_back(0);
-		n.push_back(0);
-		n.push_back(1);
+
+	for (int i = 0; i < 30; ++i) {
+		v.push_back(vec3(cos(i * 2 * PI / 10), sin(i * 2 * PI / 10), i / 10.0));
+		n.push_back(vec3(cos(i * 2 * PI / 10), sin(i * 2 * PI / 10), 0));
 	}
 
-	Stroke s(1, v, n);
-	s.constructStroke();
+	Stroke s(v, n, 0.1);
+	s.buildStroke();
 
-	vector<float> sv;
-	vector<size_t> sf;
+	vector<vec3> sv;
+	vector<ivec3> sf;
 	sv = s.strokeVerts();
 	sf = s.strokeFaces();
 
 	ofstream out("ribbon.obj");
 	
-	for (int i = 0; i < sv.size() / 3; ++i) {
+	for (int i = 0; i < sv.size(); ++i) {
 		out << "v "
-			<< sv[3 * i] << " "
-			<< sv[3 * i + 1] << " "
-			<< sv[3 * i + 2] << endl;
+			<< sv[i].x << " "
+			<< sv[i].y << " "
+			<< sv[i].z << endl;
 	}
 
-	for (int i = 0; i < sf.size() / 3; ++i) {
+	for (int i = 0; i < sf.size(); ++i) {
 		out << "f "
-			<< sf[3 * i] + 1 << " "
-			<< sf[3 * i + 1] + 1 << " "
-			<< sf[3 * i + 2] + 1 << endl;
+			<< sf[i].x + 1 << " "
+			<< sf[i].y + 1 << " "
+			<< sf[i].z + 1 << endl;
 	}
 }

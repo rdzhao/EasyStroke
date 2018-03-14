@@ -1,120 +1,79 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <cmath>
 
+#include "glm/glm.hpp"
+
 using namespace std;
+using namespace glm;
 
 class Stroke
 {
 public:
 	Stroke() {}
-	Stroke(float w, vector<float> v, vector<float> n) :width(w), verts(v), normals(n) {}
+	Stroke(vector<vec3> v, vector<vec3> n, float hw, float r = 0.3)
+		: m_verts(v), m_normals(n), m_halfwidth(hw), m_ratio(r) {}
 
-	void constructStroke(){
-		vector<float> armVerts; // fron 1 to size/3-1;
+	void buildStroke(){
+		checkValidation();
 
-		for (int i = 1; i < verts.size() / 3 - 1; ++i){
-			float x, y, z;
-			arm(i, x, y, z);
-			
-			armVerts.push_back(verts[3 * i] + x);
-			armVerts.push_back(verts[3 * i + 1] + y);
-			armVerts.push_back(verts[3 * i + 2] + z);
-
-			armVerts.push_back(verts[3 * i] - x);
-			armVerts.push_back(verts[3 * i + 1] - y);
-			armVerts.push_back(verts[3 * i + 2] - z);
+		vector<vec3> armVerts;
+		for (int i = 1; i < m_verts.size() - 1; ++i) {
+			armVerts.push_back(m_verts[i] + m_halfwidth*arm(i));
+			armVerts.push_back(m_verts[i] - m_halfwidth*arm(i));
 		}
 
-		m_strokeVerts.insert(m_strokeVerts.end(), verts.begin(), verts.end());
+		m_strokeVerts.insert(m_strokeVerts.end(), m_verts.begin(), m_verts.end());
 		m_strokeVerts.insert(m_strokeVerts.end(), armVerts.begin(), armVerts.end());
 
-		for (int i = 0; i < verts.size()/3 - 1; ++i) {
-			if (i == 0){
-				m_strokeFaces.push_back(0);
-				m_strokeFaces.push_back(1);
-				m_strokeFaces.push_back(verts.size() / 3 + 1);
-
-				m_strokeFaces.push_back(1);
-				m_strokeFaces.push_back(0);
-				m_strokeFaces.push_back(verts.size() / 3);
+		for (int i = 0; i < m_verts.size() - 1; ++i) {
+			if (i == 0) {
+				m_strokeFaces.push_back(ivec3(i + 1, i, m_verts.size() + 2 * i));
+				m_strokeFaces.push_back(ivec3(i, i + 1, m_verts.size() + 2 * i + 1));
 			}
-			else if (i == verts.size() / 3 - 2) {
-				m_strokeFaces.push_back(verts.size() / 3 - 1);
-				m_strokeFaces.push_back(verts.size() / 3 - 2);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * (verts.size() / 3 - 2) - 2);
-
-				m_strokeFaces.push_back(verts.size() / 3 - 2);
-				m_strokeFaces.push_back(verts.size() / 3 - 1);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * (verts.size() / 3 - 2) - 1);
+			else if (i == m_verts.size() - 2) {
+				m_strokeFaces.push_back(ivec3(i + 1, i, m_verts.size() + 2 * (i - 1)));
+				m_strokeFaces.push_back(ivec3(i, i + 1, m_verts.size() + 2 * (i - 1) + 1));
 			}
 			else {
-				m_strokeFaces.push_back(i);
-				m_strokeFaces.push_back(i+1);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * i - 1);
+				m_strokeFaces.push_back(ivec3(i + 1, i, m_verts.size() + 2 * i));
+				m_strokeFaces.push_back(ivec3(i, i + 1, m_verts.size() + 2 * i + 1));
 
-				m_strokeFaces.push_back(i + 1);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * i + 1);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * i - 1);
-
-				m_strokeFaces.push_back(i + 1);
-				m_strokeFaces.push_back(i);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * i - 2);
-
-				m_strokeFaces.push_back(i + 1);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * i - 2);
-				m_strokeFaces.push_back(verts.size() / 3 + 2 * i);
+				m_strokeFaces.push_back(ivec3(i, m_verts.size() + 2 * (i - 1), m_verts.size() + 2 * i));
+				m_strokeFaces.push_back(ivec3(i, m_verts.size() + 2 * i + 1, m_verts.size() + 2 * (i - 1) + 1));
 			}
 		}
 	}
 
-	vector<float>& strokeVerts() { return m_strokeVerts; }
-	vector<size_t>& strokeFaces() { return m_strokeFaces; }
+	vector<vec3>& strokeVerts() { return m_strokeVerts; }
+	vector<ivec3>& strokeFaces() { return m_strokeFaces; }
 
 private:
-	float length(){
-		double l = 0;
-		for (int i = 0; i < verts.size() / 3 - 1; ++i) {
-			l += length(i);
-		}
-		return l;
+	void checkValidation() {
+		if (m_verts.size() < 3)
+			cerr << "Error: vertices size < 3" << endl;
 	}
 
-	float length(size_t i) {
-		return sqrt((verts[3 * i + 3] - verts[3 * i])*(verts[3 * i + 3] - verts[3 * i])
-			+ (verts[3 * i + 4] - verts[3 * i + 1])*(verts[3 * i + 4] - verts[3 * i + 1])
-			+ (verts[3 * i + 5] - verts[3 * i + 2])*(verts[3 * i + 5] - verts[3 * i + 2]));
+	vec3 arm(int i) {
+		vec3 df = m_verts[i + 1] - m_verts[i];
+		vec3 db = m_verts[i - 1] - m_verts[i];
+		//cout << i<<" "<<df.x << " " << df.y << " " << df.z << endl;
+		vec3 uf = normalize(cross(df, m_normals[i]));
+		vec3 ub = normalize(cross(m_normals[i], db));
+		cout << i << " " << uf.x << " " << uf.y << " " << uf.z << endl;
+		cout << i << " " << ub.x << " " << ub.y << " " << ub.z << endl;
+		return normalize(uf + ub);
 	}
-
-	void arm(size_t i, float& x, float& y, float& z) {
-		float dx, dy, dz, nx, ny, nz;
-		dx = verts[3 * i + 3] - verts[3 * i];
-		dy = verts[3 * i + 4] - verts[3 * i + 1];
-		dz = verts[3 * i + 5] - verts[3 * i + 2];
-		nx = normals[3 * i];
-		ny = normals[3 * i + 1];
-		nz = normals[3 * i + 2];
-		
-		float ax, ay, az;
-		ax = dy*nz - dz*ny;
-		ay = dz*nx - dx*nz;
-		az = dx*ny - dy*nx;
-		
-		float al = sqrt(ax*ax + ay*ay + az*az);
-		
-		x = (ax / al)*(width / 2);
-		y = (ay / al)*(width / 2);
-		z = (az / al)*(width / 2);
-	}
-		
 
 private:
-	float width;
-	vector<float> verts; // tripple, a list of vertices representing the line segments.
-	vector<float> normals; // tripple, corresponding normals.
-	
-	vector<float> m_strokeVerts; 
-	vector<size_t> m_strokeFaces;
+	float m_halfwidth;
+	float m_ratio;
+	vector<vec3> m_verts;
+	vector<vec3> m_normals;
+
+	vector<vec3> m_strokeVerts;
+	vector<ivec3> m_strokeFaces;
 };
 
