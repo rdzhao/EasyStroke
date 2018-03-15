@@ -12,12 +12,12 @@ int main()
 	//}
 
 
-	for (int i = 0; i < 30; ++i) {
-		v.push_back(vec3(cos(i * 2 * PI / 10), sin(i * 2 * PI / 10), i / 10.0));
-		n.push_back(vec3(cos(i * 2 * PI / 10), sin(i * 2 * PI / 10), 0));
+	for (int i = 0; i < 100; ++i) {
+		v.push_back(vec3(2 * cos(i * 2 * PI / 20), 2 * sin(i * 2 * PI / 20), i / 10.0));
+		n.push_back(vec3(cos(i * 2 * PI / 20), sin(i * 2 * PI / 20), 0));
 	}
 
-	Stroke s(v, n, 0.1);
+	Stroke s(v, n, 0.3);
 	s.buildStroke();
 
 	vector<vec3> sv;

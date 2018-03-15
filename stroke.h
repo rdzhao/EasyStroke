@@ -20,9 +20,24 @@ public:
 		checkValidation();
 
 		vector<vec3> armVerts;
+		float cl = segLength(0);
+		float tl = totalLength();
 		for (int i = 1; i < m_verts.size() - 1; ++i) {
-			armVerts.push_back(m_verts[i] + m_halfwidth*arm(i));
-			armVerts.push_back(m_verts[i] - m_halfwidth*arm(i));
+			float t;
+			if (cl / tl < m_ratio) {
+				t = (cl / tl) / m_ratio;
+			}
+			else if (cl / tl > 1 - m_ratio) {
+				t = (1 - cl / tl) / m_ratio;
+			}
+			else {
+				t = 1;
+			}
+			cl += segLength(i);
+			cout << t<<" "<<m_ratio << endl;
+			
+			armVerts.push_back(m_verts[i] + t * m_halfwidth*arm(i));
+			armVerts.push_back(m_verts[i] - t * m_halfwidth*arm(i));
 		}
 
 		m_strokeVerts.insert(m_strokeVerts.end(), m_verts.begin(), m_verts.end());
@@ -62,9 +77,21 @@ private:
 		//cout << i<<" "<<df.x << " " << df.y << " " << df.z << endl;
 		vec3 uf = normalize(cross(df, m_normals[i]));
 		vec3 ub = normalize(cross(m_normals[i], db));
-		cout << i << " " << uf.x << " " << uf.y << " " << uf.z << endl;
-		cout << i << " " << ub.x << " " << ub.y << " " << ub.z << endl;
+		//cout << i << " " << uf.x << " " << uf.y << " " << uf.z << endl;
+		//cout << i << " " << ub.x << " " << ub.y << " " << ub.z << endl;
 		return normalize(uf + ub);
+	}
+
+	float segLength(int i) {
+		return length(m_verts[i + 1] - m_verts[i]);
+	}
+
+	float totalLength() {
+		float l = 0;
+		for (int i = 0; i < m_verts.size() - 1; ++i) {
+			l += segLength(i);
+		}
+		return l;
 	}
 
 private:
